@@ -166,3 +166,14 @@ def align(posns1, posns2):
     d_angles2 = get_d_angles(posns2_mom2_p, posns1_mom2_p)
     posns2 = rotate(posns2, d_angles2)
     return posns1, posns2
+
+def closest_pair(frag1, frag2, posns):
+    min = 1E10
+    closest_pair = None
+    for a1 in frag1:
+        for a2 in frag2:
+            dist = np.linalg.norm(posns[a2] - posns[a1])
+            if dist < min:
+                min = dist
+                closest_pair = [a1, a2]
+    return closest_pair, min

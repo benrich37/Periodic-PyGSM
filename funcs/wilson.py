@@ -1,4 +1,5 @@
 import numpy as np
+from funcs import connec, geom, ic_gen, misc
 
 # See wilson's Molecular Vibrations
 # pg 55
@@ -71,6 +72,8 @@ wilson_func_dict = {
 }
 
 def get_sts(posns, idcs):
+    # This will not return immediately usable vectors, as the Wilson funcs return vectors of length 2x3 -> 4x3, with
+    # elements referring to an element in the full cartesian vector, with the unreferenced atoms' elements set to 0
     """
     :param posns: List of all positions (n,3)
     :param idcs: List of indices of atoms of interest (len 2 -> 4)
@@ -97,4 +100,6 @@ def ic_in_cart(posns, idcs):
     St = np.zeros(tuple([len(posns), 3]))
     for i in range(len(idcs)):
         St[idcs[i]] = sts[i]
+    # print('norm of wilson vec')
+    # print(np.linalg.norm(geom.stretch_vec(St)))
     return St
