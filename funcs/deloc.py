@@ -16,7 +16,7 @@ def get_Bprim(atoms_obj):
     return B_prim
 
 def get_U(atoms_obj):
-    B_prim = get_Bprim()
+    B_prim = get_Bprim(atoms_obj)
     BBT = np.dot(B_prim, B_prim.T)
     # # Eigh used instead of eig due to problems of complex leakage
     solve = np.linalg.eigh(BBT)
@@ -31,7 +31,7 @@ def get_U(atoms_obj):
     return U
 
 def get_B_and_BTinv(atoms_obj):
-    B_prim = get_Bprim()
+    B_prim = get_Bprim(atoms_obj)
     U = get_U(atoms_obj)
     B = np.dot(U.T, B_prim)
     B = misc.normalize(B)

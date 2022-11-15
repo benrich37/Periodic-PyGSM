@@ -106,6 +106,9 @@ def a_in_edges(edges, a):
 #             output = output + get_edges_a(bonds_dict, a)
 #     return output
 
+def get_edges(bonds_dict):
+    return get_all_edges(bonds_dict)
+
 def get_all_edges(bonds_dict):
     all_edges = []
     for a in range(len(bonds_dict)):
