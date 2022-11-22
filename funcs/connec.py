@@ -1,32 +1,14 @@
 import numpy as np
 import copy
 from funcs import geom
-
-
+from pickle import load as pload
+bond_ref = pload(open('refs.txt', 'rb'))
 ############################################################
-radii_dict = {
-    1: 0.31,
-    2: 0.25,
-    3: 1.28,
-    4: 0.96,
-    5: 0.84,
-    6: 0.76,
-    7: 0.71,
-    8: 0.66,
-    9: 0.57,
-    10: 0.58,
-    11: 1.66,
-    12: 1.41,
-    13: 1.21,
-    14: 1.11,
-    15: 1.07,
-    16: 1.05,
-    17: 1.02,
-    18: 1.06
-}
+
 def is_bonded(posn1, posn2, num1, num2, margin=0.1):
     dist = abs(np.linalg.norm(posn2 - posn1))
-    maxdist = radii_dict[num1] + radii_dict[num2]
+    ref1, ref2 = bond_ref[num1-1], bond_ref[num2-1]
+    maxdist = ref1[0] + ref2[0] - abs(ref1[1] - ref2[1])*0.09
     maxdist = maxdist + margin * maxdist
     return maxdist >= dist and dist != 0.
 def atoms_is_bonded(atoms_obj, id1, id2):
