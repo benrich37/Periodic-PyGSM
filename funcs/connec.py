@@ -7,10 +7,10 @@ bond_ref = pload(open('refs.txt', 'rb'))
 
 def is_bonded(posn1, posn2, num1, num2, margin=0.1):
     dist = abs(np.linalg.norm(posn2 - posn1))
-    ref1, ref2 = bond_ref[num1-1], bond_ref[num2-1]
-    maxdist = ref1[0] + ref2[0] - abs(ref1[1] - ref2[1])*0.09
-    maxdist = (1 + margin ) * maxdist
-    return maxdist >= dist and dist != 0.
+    ref1, ref2 = bond_ref[num1 - 1], bond_ref[num2 - 1]
+    maxdist = ref1[0] + ref2[0] - abs(ref1[1] - ref2[1]) * 0.09
+    maxdist = (1 + margin) * maxdist
+    return maxdist >= dist
 def atoms_is_bonded(atoms_obj, id1, id2):
     nums = atoms_obj.get_atomic_numbers()
     posns = atoms_obj.get_positions()
