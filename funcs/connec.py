@@ -2,11 +2,43 @@ import numpy as np
 import copy
 from funcs import geom
 from pickle import load as pload
-bond_ref = pload(open('refs.txt', 'rb'))
+bond_ref = pload(open('funcs/refs/refs.txt', 'rb'))
 ############################################################
+def pbc_trans(posn, pbc, img_idcs):
+    """
+    :param posn: [x, y, z] (coords in origin image)
+    :param pbc: [a, b, c] (size of unit cell)
+    :param img_idcs: [i, j, k] (indices of desired image neighbor)
+                     (ie the origin image is [0, 0, 0])
+    :return: posn_trans: [x, y, z] (translated posn]
+    """
+    posn_trans = []
+    for i in range(3):
+        posn_trans.append(posn[i] + (pbc[i]*img_idcs[i]))
+    return posn_trans
+def pbc_dist(posn1, posn2, pbc):
+    # Strategy - keep posn1 the same, but iterate posn2 through all neighboring
+    #            images, and save the distance of the closest neighbor and a
+    #            list to remember which neighbor that was (ie the cell image
+    #            that's up one unit cell along x, down one along y, and aligned
+    #            along z would be [1, -1, 0]
+    current_shortest = 1000
+    current_shortest_img_idcs = [0,0,0]
+    for i in [-1, 0, 1]:
+        for j in [-1, 0, 1]:
+            for k in [-1, 0, 1]:
+                try_posn2 = pbc_trans(posn2, pbc, [i, j, k])
+                try_dist = abs(np.linalg.norm(try_posn2 - posn1))
+                if try_dist < current_shortest:
+                    current_shortest = try_dist
+                    current_shortest_img_idcs = [i, j, k]
+    return current_shortest, current_shortest_img_idcs
 
-def is_bonded(posn1, posn2, num1, num2, margin=0.1):
-    dist = abs(np.linalg.norm(posn2 - posn1))
+def is_bonded(posn1, posn2, num1, num2, margin=0.1, pbc=None):
+    if pbc is None:
+        dist = abs(np.linalg.norm(posn2 - posn1))
+    else:
+        dist = pbc_dist(posn1, posn2, pbc)
     ref1, ref2 = bond_ref[num1 - 1], bond_ref[num2 - 1]
     maxdist = ref1[0] + ref2[0] - abs(ref1[1] - ref2[1]) * 0.09
     maxdist = (1 + margin) * maxdist
@@ -75,7 +107,7 @@ def get_edges_a(bonds_dict, a):
     return output
 
 def a_in_edges(edges, a):
-    # Edges shouldnt have bools anymore at this point
+    # Edges shouldn't have bools anymore at this point
     for e in edges:
         if a in e:
             return True
