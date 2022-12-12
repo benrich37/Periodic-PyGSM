@@ -24,38 +24,6 @@ class TestUtils(unittest.TestCase):
         ex = [0, 1, 2, 3]
         ex_out = [3, 2, 1, 0]
         self.assertTrue(connec.same_edge(ex, ex_out))
-    def test_pbc_trans(self):
-        posn_og = list(np.random.random(3))
-        dummy_pbcs = list(np.random.random(3))
-        dummy_idcs = list(np.random.randint(-1, 1, 3))
-        self.assertListEqual(list(posn_og),
-                             list(connec.pbc_trans(posn_og,
-                                          [0, 0, 0],
-                                          dummy_idcs
-                                          ))
-                         )
-        self.assertListEqual(list(posn_og),
-                             list(connec.pbc_trans(posn_og,
-                                                   dummy_pbcs,
-                                                   [0, 0, 0]
-                                                   ))
-                             )
-        self.assertListEqual([1.5, 1.5, 1.5],
-                             connec.pbc_trans([1.0, 1.0, 1.0],
-                                              [0.5, 0.5, 0.5],
-                                              [1, 1, 1]))
-        self.assertListEqual([0.5, 0.5, 0.5],
-                             connec.pbc_trans([1.0, 1.0, 1.0],
-                                              [0.5, 0.5, 0.5],
-                                              [-1, -1, -1]))
-    def test_pbc_dist(self):
-        pbc = [5.0, 5.0, 5.0]
-        posn1 = np.array([0, 0, 0])
-        posn2 = np.array([4.9, 4.9, 4.9])
-        self.assertListEqual([0, 0, 0],
-                             connec.pbc_dist(posn1, posn1, pbc)[1])
-        self.assertListEqual([-1, -1, -1],
-                             connec.pbc_dist(posn1, posn2, pbc)[1])
 
 
 

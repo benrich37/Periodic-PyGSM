@@ -10,7 +10,7 @@ from funcs import connec, geom, ic_gen, misc
 # where f_i is one of three cartesian coordinates for an atom,
 # and B_{t,i} is its coefficient in expressing S_t
 
-def unit_vec(posns, idx1, idx2):
+def unit_vec(posns, atom_idcs, trans_idcs, cell):
     """
     :param posns: List of all positions (shape = (n,3))
     :param idx1: index for atom 1
@@ -18,23 +18,25 @@ def unit_vec(posns, idx1, idx2):
     :return e12: unit vector for atom 1 to atom 2
     :return r12: length of distance from atom 1 to atom 2
     """
-    vec = posns[idx2] - posns[idx1]
+    posn1 = geom.posn_trans(posns[atom_idcs[0]], cell, trans_idcs[0])
+    posn2 = geom.posn_trans(posns[atom_idcs[1]], cell, trans_idcs[1])
+    vec = posn2 - posn1
     r12 = np.linalg.norm(vec)
     e12 = vec/r12
     return e12, r12
 
 
-def wilson_bond_vec(posns, idcs):
+def wilson_bond_vec(posns, atom_idcs, trans_idcs, cell):
     # See Wilson pg 56, eqn 3
-    st1 = unit_vec(posns, idcs[0], idcs[1])[0]
+    st1 = unit_vec(posns, atom_idcs, trans_idcs, cell)[0]
     st2 = -st1
     return [st1, st2]
 
 
-def wilson_angle_vec(posns, idcs):
+def wilson_angle_vec(posns, idcs, trans_idcs, cell):
     # See Wilson pg 57, eqn 5-8
-    e31, r31 = unit_vec(posns, idcs[2], idcs[0])
-    e32, r32 = unit_vec(posns, idcs[2], idcs[1])
+    e31, r31 = unit_vec(posns, [idcs[2], idcs[0]], [trans_idcs[2], trans_idcs[0]], cell)
+    e32, r32 = unit_vec(posns, [idcs[2], idcs[1]], [trans_idcs[2], trans_idcs[1]], cell)
     theta = np.arccos(np.dot(e31, e32))
     st1 = ((np.cos(theta) * e31) - e32) / (r31 * np.sin(theta))
     st2 = ((np.cos(theta) * e32) - e31) / (r32 * np.sin(theta))
@@ -42,11 +44,11 @@ def wilson_angle_vec(posns, idcs):
     return [st1, st2, st3]
 
 
-def wilson_dihedral_vec(posns, idcs):
+def wilson_dihedral_vec(posns, idcs, trans_idcs, cell):
     # See Wilson pg 60, eqn 19, and pg 59, eqn 18
-    e41, r41 = unit_vec(posns, idcs[3], idcs[0])
-    e42, r42 = unit_vec(posns, idcs[3], idcs[1])
-    e43, r43 = unit_vec(posns, idcs[3], idcs[2])
+    e41, r41 = unit_vec(posns, [idcs[3], idcs[0]], [trans_idcs[3], trans_idcs[0]], cell)
+    e42, r42 = unit_vec(posns, [idcs[3], idcs[1]], [trans_idcs[3], trans_idcs[1]], cell)
+    e43, r43 = unit_vec(posns, [idcs[3], idcs[2]], [trans_idcs[3], trans_idcs[2]], cell)
     phi1 = np.arccos(np.dot(e43, e42))
     theta = np.arcsin(np.dot((np.cross(e42, e43) / np.sin(phi1)), e41))
     st1 = (1 / r41) * (
@@ -71,7 +73,7 @@ wilson_func_dict = {
     4: wilson_dihedral_vec
 }
 
-def get_sts(posns, idcs):
+def get_sts(posns, idcs, trans_idcs, cell):
     # This will not return immediately usable vectors, as the Wilson funcs return vectors of length 2x3 -> 4x3, with
     # elements referring to an element in the full cartesian vector, with the unreferenced atoms' elements set to 0
     """
@@ -83,23 +85,21 @@ def get_sts(posns, idcs):
         func = wilson_func_dict[len(idcs)]
     except Exception as e:
         print(e)
-    sts = func(posns, idcs)
+    sts = func(posns, idcs, trans_idcs, cell)
     return sts
 
 
-def ic_in_cart(posns, idcs):
+def ic_in_cart(posns, idcs, trans_idcs, cell):
     """
-    :param posns: List of all positions
-    :param idcs: List of indices of atoms of interest
+    :param (list[np.ndarray]) posns: List of all positions
+    :param (list[list[int]]) idcs: List of indices of atoms of interest
     :return St: (n,3) vector describing internal coordinate in cartesian
     """
     try:
-        sts = get_sts(posns, idcs)
+        sts = get_sts(posns, idcs, trans_idcs, cell)
     except Exception as e:
         print(e)
     St = np.zeros(tuple([len(posns), 3]))
     for i in range(len(idcs)):
         St[idcs[i]] = sts[i]
-    # print('norm of wilson vec')
-    # print(np.linalg.norm(geom.stretch_vec(St)))
     return St
