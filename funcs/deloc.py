@@ -7,7 +7,7 @@ import math
 import numpy as np
 
 def get_Bprim(atoms_obj):
-    prim_carts = ic_gen.all_prim_carts(atoms_obj)
+    prim_carts = ic_gen.get_prim_carts(atoms_obj)
     prim_carts_mat = []
     for v in prim_carts:
         next = geom.stretch_vec(v)
