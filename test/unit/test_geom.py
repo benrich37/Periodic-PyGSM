@@ -21,6 +21,11 @@ class TestUtils(unittest.TestCase):
         cls.mom_0_100_vec = np.array([[1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]])
         cls.mom_0_010_vec = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 0, -1]])
         cls.mom_0_001_vec = np.array([[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1]])
+        cls.square_cell = np.array([
+            [1,0,0],
+            [0,1,0],
+            [0,0,1]
+        ])
 
 
     def test_stretch_vec(self):
@@ -112,10 +117,43 @@ class TestUtils(unittest.TestCase):
         overlap = np.dot(vec1_p, vec2)
         self.assertAlmostEqual(overlap, 0)
 
-    def test_align(self):
-        vec1 = geom.stretch_vec(np.random.random(tuple([N, 3])))
-        vec2 = geom.stretch_vec(np.random.random(tuple([N, 3])))
-        vec1, vec2 = geom.align(vec1, vec2)
+    # def test_align(self):
+    #     vec1 = geom.stretch_vec(np.random.random(tuple([N, 3])))
+    #     vec2 = geom.stretch_vec(np.random.random(tuple([N, 3])))
+    #     vec1, vec2 = geom.align(vec1, vec2)
+
+    def test_pbc_trans(self):
+        posn_og = np.random.random(3)
+        dummy_pbcs = np.random.random([3,3])
+        dummy_idcs = list(np.random.randint(-1, 1, 3))
+        self.assertListEqual(list(posn_og),
+                             list(geom.posn_trans(posn_og,
+                                          np.zeros([3,3]),
+                                          dummy_idcs
+                                          ))
+                         )
+        self.assertListEqual(list(posn_og),
+                             list(geom.posn_trans(posn_og,
+                                                   dummy_pbcs,
+                                                   [0, 0, 0]
+                                                   ))
+                             )
+        self.assertListEqual([1.5, 1.5, 1.5],
+                             list(geom.posn_trans([1.0, 1.0, 1.0],
+                                              self.square_cell*0.5,
+                                              [1, 1, 1])))
+        self.assertListEqual([0.5, 0.5, 0.5],
+                             list(geom.posn_trans([1.0, 1.0, 1.0],
+                                              self.square_cell*0.5,
+                                              [-1, -1, -1])))
+    def test_closest_img(self):
+        pbc = [True, True, True]
+        posn1 = np.array([0, 0, 0])
+        posn2 = np.array([4.9, 4.9, 4.9])
+        self.assertListEqual([0, 0, 0],
+                             geom.closest_img(posn1, posn1, pbc, self.square_cell*5.0)[1])
+        self.assertListEqual([-1, -1, -1],
+                             geom.closest_img(posn1, posn2, pbc, self.square_cell*5.0)[1])
 
 
 

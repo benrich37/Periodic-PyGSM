@@ -1,6 +1,124 @@
 import numpy as np
 import copy
 
+
+def add_trans_idcs(t1, t2):
+    """ Returns two lists added together
+    :param (list[int]) t1:
+    :param (list[int]) t2:
+    :return (list[int]) new_trans_idcs:
+    """
+    new_trans_idcs = []
+    for i in range(len(t1)):
+        new_trans_idcs.append(int(t1[i] + t2[i]))
+    return new_trans_idcs
+
+def gen_all_trans_idcs(atom_idcs, bond_dict):
+    """ Returns a list of trans_idcs to tell the cartesian vector generator
+    where the origin should be shifted for each atom position
+
+    (ie if atom1 bonds to atom2 with trans_idcs [1, 0, 0], and
+    atom2 bonds to atom3 with trans_idcs [0, 1, 0], the returned
+    list would be [[0,0,0], [1,0,0], [1,1,0]])
+    :param (list[int]) atom_idcs:
+    :param (dict) bond_dict:
+    :return (list[list[int]]) all_trans_idcs:
+    """
+    all_trans_idcs = [[0, 0, 0]]
+    for i in range(len(atom_idcs) - 1):
+        a_i = atom_idcs[i]
+        a_i_step_idx = bond_dict[a_i][0].index(atom_idcs[i+1])
+        trans_step = bond_dict[a_i][1][a_i_step_idx]
+        all_trans_idcs.append(add_trans_idcs(all_trans_idcs[-1], trans_step))
+    return all_trans_idcs
+
+def posns_trans(posns, cell, all_trans_idcs):
+    """
+    :param (list[np.ndarray]) posns:
+    :param (np.ndarray) cell:
+    :param (list[list[int]]) all_trans_idcs:
+    :return list[np.ndarray]):
+    """
+    output = []
+    for i in range(len(posns)):
+        output.append(posn_trans(posns[i], cell, all_trans_idcs[i]))
+    return output
+
+def posn_trans(posn, cell, trans_idcs):
+    # Cell is actually a 3x3, where each entry is a lattice vector
+    """
+    :param posn: [x, y, z] (coords in origin image)
+    :param cell: 3 lattice vectors of length 3
+    :param trans_idcs: [i, j, k] (indices of desired image neighbor)
+                     (ie the origin image is [0, 0, 0])
+    :return: posn_trans: [x, y, z] (translated posn]
+    """
+    posn_trans = np.zeros(3)
+    for i in range(3):
+        posn_trans += cell[i] * trans_idcs[i]
+    posn_trans += posn
+    return posn_trans
+
+def set_iterate(bool):
+    """
+    :param bool: Taken from pbc condition for a lattice vector
+    :return iterate list: Either [0] (if bool False) or [-1, 0, 1]
+    """
+    if bool:
+        return [-1, 0, 1]
+    else:
+        return [0]
+
+def closest_img(posn1, posn2, pbc, cell):
+    """ Finds the closest cell for posn2 given cell vectors and pbc criteria,
+    returns the closest distance and trans indices for best cell
+    :param (np.ndarray) posn1: xyz array
+    :param (np.ndarray) posn2: xyz array
+    :param (list[bool]) pbc: len 3 list of bools
+    :param (np.ndarray) cell: lattice vectors defining cell in cartesian
+    :return (float) cur_min: posn1 to posn2 closest dist
+    :return (list[int]) cur_min_trans_idcs: translate idcs of closest img for posn2
+    """
+    # Strategy - keep posn1 the same, but iterate posn2 through all neighboring
+    #            images, and save the distance of the closest neighbor and a
+    #            list to remember which neighbor that was (ie the cell image
+    #            that's up one unit cell along x, down one along y, and aligned
+    #            along z would be [1, -1, 0]
+    cur_min = 1E10
+    cur_min_trans_idcs = [0, 0, 0]
+    for i in set_iterate(pbc[0]):
+        for j in set_iterate(pbc[1]):
+            for k in set_iterate(pbc[2]):
+                trans_posn2 = posn_trans(posn2, cell, [i, j, k])
+                trans_dist = abs(np.linalg.norm(trans_posn2 - posn1))
+                if trans_dist < cur_min:
+                    cur_min = trans_dist
+                    cur_min_trans_idcs = [i, j, k]
+    return cur_min, cur_min_trans_idcs
+
+def closest_pair(frag1, frag2, posns, cell, pbc):
+    """ Returns min_a1_a2, min_dist, a2_trans_idcs
+    :param frag1: list of atom indices
+    :param frag2: another list of atom indices
+    :param posns: ref list of atom cartesian positions
+    :param cell: lattice vectors
+    :param pbc: list of bools for whether system is periodic for each lattice vector
+    :return min_a1_a2: list of ints of length 2
+    :returns min_dist: float
+    :returns a2_trans_idcs: list of (-1, 0, or 1) of length 3
+    """
+    min_dist = 1E10
+    min_a1_a2 = [None, None]
+    a2_trans_idcs = [None, None, None]
+    for a1 in frag1:
+        for a2 in frag2:
+            dist, trans_idcs = closest_img(posns[a1], posns[a2], pbc, cell)
+            if dist < min_dist:
+                min_dist = dist
+                a2_trans_idcs = trans_idcs
+                min_a1_a2 = [a1, a2]
+    return min_a1_a2, min_dist, a2_trans_idcs
+
 def stretch_vec(vec):
     # assumes an n by 3 vec, as usually used to describe molecule geometry
     n = len(vec)
@@ -38,6 +156,9 @@ def normalize_basis(vecs):
     for v in vecs:
         output.append(v/np.linalg.norm(v))
     return output
+
+# Functions below this line are currently unused
+################################
 
 def get_vec_in_basis(vec, basis):
     cs = []
@@ -166,14 +287,3 @@ def align(posns1, posns2):
     d_angles2 = get_d_angles(posns2_mom2_p, posns1_mom2_p)
     posns2 = rotate(posns2, d_angles2)
     return posns1, posns2
-
-def closest_pair(frag1, frag2, posns):
-    min = 1E10
-    closest_pair = None
-    for a1 in frag1:
-        for a2 in frag2:
-            dist = np.linalg.norm(posns[a2] - posns[a1])
-            if dist < min:
-                min = dist
-                closest_pair = [a1, a2]
-    return closest_pair, min
