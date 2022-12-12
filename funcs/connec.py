@@ -195,19 +195,6 @@ def filter_for_ic_edges(edges):
             edges_by_length[len(e)].append(e)
     return edges_by_length
 
-def get_all_ic_edges(bonds_dict):
-    """ Traverses through bonds of bonds_dict to return all unique bonds,
-    angles, and dihedrals
-    :param (dict) bonds_dict:
-    :return (list[list[int]]) ic_edges:
-    """
-    all_edges = get_all_edges(bonds_dict)
-    edge_dict = filter_for_ic_edges(all_edges)
-    ic_edges = []
-    for collection in [edge_dict[2], edge_dict[3], edge_dict[4]]:
-        ic_edges += remove_redundant_edges(collection)
-    return ic_edges
-
 def remove_redundant_edges(edges):
     """ Takes a list of edges of the same length, and returns only unique edges
     :param (list[list[int]]) edges: MUST ALL BE OF SAME LENGTH
@@ -223,6 +210,19 @@ def remove_redundant_edges(edges):
         if unique:
             unique_edges.append(e)
     return unique_edges
+
+def get_all_ic_edges(bonds_dict):
+    """ Traverses through bonds of bonds_dict to return all unique bonds,
+    angles, and dihedrals
+    :param (dict) bonds_dict:
+    :return (list[list[int]]) ic_edges:
+    """
+    all_edges = get_all_edges(bonds_dict)
+    edge_dict = filter_for_ic_edges(all_edges)
+    ic_edges = []
+    for collection in [edge_dict[2], edge_dict[3], edge_dict[4]]:
+        ic_edges += remove_redundant_edges(collection)
+    return ic_edges
 
 def flip_edge(edge):
     """ Takes an edge and just reverses the order for uniqueness testing

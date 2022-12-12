@@ -2,16 +2,31 @@ import numpy as np
 import copy
 
 
-def add_trans_idcs(t1, t2):
-    """ Returns two lists added together
-    :param (list[int]) t1:
-    :param (list[int]) t2:
-    :return (list[int]) new_trans_idcs:
+# def add_trans_idcs(t1, t2):
+#     """ Returns two lists added together
+#     :param (list[int]) t1:
+#     :param (list[int]) t2:
+#     :return (list[int]) new_trans_idcs:
+#     """
+#     new_trans_idcs = []
+#     for i in range(len(t1)):
+#         new_trans_idcs.append(int(t1[i] + t2[i]))
+#     return new_trans_idcs
+
+def add_trans_idcs(ts):
+    """ Adds a list of ints together (not defining dim
+    in case of weird lattice vector setups)
+    :param (list[list[int]]) ts:
+    :return (list[int]) sum_of_trans_idcs:
     """
-    new_trans_idcs = []
-    for i in range(len(t1)):
-        new_trans_idcs.append(int(t1[i] + t2[i]))
-    return new_trans_idcs
+    dim = len(ts[0])
+    dimrange = range(dim)
+    sum_of_trans_idcs = [0]*dim
+    for t in ts:
+        for i in dimrange:
+            sum_of_trans_idcs[i] += t[i]
+    return sum_of_trans_idcs
+
 
 def gen_all_trans_idcs(atom_idcs, bond_dict):
     """ Returns a list of trans_idcs to tell the cartesian vector generator
@@ -20,6 +35,7 @@ def gen_all_trans_idcs(atom_idcs, bond_dict):
     (ie if atom1 bonds to atom2 with trans_idcs [1, 0, 0], and
     atom2 bonds to atom3 with trans_idcs [0, 1, 0], the returned
     list would be [[0,0,0], [1,0,0], [1,1,0]])
+
     :param (list[int]) atom_idcs:
     :param (dict) bond_dict:
     :return (list[list[int]]) all_trans_idcs:
@@ -29,11 +45,12 @@ def gen_all_trans_idcs(atom_idcs, bond_dict):
         a_i = atom_idcs[i]
         a_i_step_idx = bond_dict[a_i][0].index(atom_idcs[i+1])
         trans_step = bond_dict[a_i][1][a_i_step_idx]
-        all_trans_idcs.append(add_trans_idcs(all_trans_idcs[-1], trans_step))
+        all_trans_idcs.append(add_trans_idcs([all_trans_idcs[-1], trans_step]))
     return all_trans_idcs
 
 def posns_trans(posns, cell, all_trans_idcs):
-    """
+    """ Returns a list of positions, each translated by lattice
+    vectors of cell by direction indicated in all_trans_idcs
     :param (list[np.ndarray]) posns:
     :param (np.ndarray) cell:
     :param (list[list[int]]) all_trans_idcs:
@@ -46,10 +63,11 @@ def posns_trans(posns, cell, all_trans_idcs):
 
 def posn_trans(posn, cell, trans_idcs):
     # Cell is actually a 3x3, where each entry is a lattice vector
-    """
-    :param posn: [x, y, z] (coords in origin image)
-    :param cell: 3 lattice vectors of length 3
-    :param trans_idcs: [i, j, k] (indices of desired image neighbor)
+    """ Translates the given position to a neighboring unit cell
+    directed by trans_idcs
+    :param (np.ndarray) posn: [x, y, z] (coords in origin image)
+    :param (np.ndarray) cell: 3 lattice vectors of length 3
+    :param (list[int]) trans_idcs: [i, j, k] (indices of desired image neighbor)
                      (ie the origin image is [0, 0, 0])
     :return: posn_trans: [x, y, z] (translated posn]
     """
